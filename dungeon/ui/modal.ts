@@ -59,7 +59,7 @@ export class DungeonGeneratorModal extends Modal {
                 const dungeonTypes = Object.keys(this.plugin.dungeonSettings.dungeonTypes);
                 
                 dungeonTypes.forEach(type => {
-                    dropdown.addOption(type, this.plugin.dungeonSettings.dungeonTypes[type].name);
+                    dropdown.addOption(type, this.plugin.dungeonSettings.dungeonTypes[type as DungeonType].name);
                 });
                 
                 dropdown.setValue(this.dungeonType);
@@ -175,7 +175,7 @@ export class DungeonGeneratorModal extends Modal {
         
         // Add a title above the SVG
         const dungeonTitle = document.createElement('h3');
-        dungeonTitle.textContent = `${this.plugin.dungeonSettings.dungeonTypes[this.dungeonType].name} - ${this.size}`;
+        dungeonTitle.textContent = `${this.plugin.dungeonSettings.dungeonTypes[this.dungeonType as DungeonType].name} - ${this.size}`;
         dungeonTitle.style.marginBottom = '10px';
         
         if (previewContainer && previewContainer.firstChild) {
@@ -198,7 +198,7 @@ export class DungeonGeneratorModal extends Modal {
             
             // Create the content to insert
             const dungeonContent = `
-## ${this.plugin.dungeonSettings.dungeonTypes[this.dungeonType].name} Dungeon (${this.size})
+## ${this.plugin.dungeonSettings.dungeonTypes[this.dungeonType as DungeonType].name} Dungeon (${this.size})
 
 ${this.generatedDungeon.svg}
 
