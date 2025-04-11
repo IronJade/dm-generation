@@ -8,12 +8,11 @@ import {
     Notice
 } from 'obsidian';
 
-import NPCGenerator from '../main';
+import UnifiedGeneratorPlugin from '../../main';
 import {
     Race,
     CharacterClass,
-    CustomParameter,
-    AbilityName
+    CustomParameter
 } from '../types';
 
 import {
@@ -21,11 +20,14 @@ import {
     defaultClasses
 } from '../data/defaults';
 
-export class NPCGeneratorSettingsTab extends PluginSettingTab {
-    private plugin: NPCGenerator;
+// Define the AbilityName type if not already defined
+type AbilityName = 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha';
+
+export class NPCGeneratorSettingTab extends PluginSettingTab {
+    private plugin: UnifiedGeneratorPlugin;
     private activeTab: string = 'general';
 
-    constructor(app: App, plugin: NPCGenerator) {
+    constructor(app: App, plugin: UnifiedGeneratorPlugin) {
         super(app, plugin);
         this.plugin = plugin;
     }
@@ -39,12 +41,7 @@ export class NPCGeneratorSettingsTab extends PluginSettingTab {
             containerEl
         } = this;
         containerEl.empty();
-        new Setting(containerEl).setHeading().setName("Basic Settings");
-
-        // Title
-        containerEl.createEl('h1', {
-            text: 'NPC Generator Settings'
-        });
+        new Setting(containerEl).setHeading().setName("NPC Generator Settings");
 
         // Create navigation tabs
         const navContainer = containerEl.createDiv('nav-container');
@@ -145,13 +142,13 @@ export class NPCGeneratorSettingsTab extends PluginSettingTab {
     private mergeDefaultRaces(defaultRaces: Race[]) {
         // Create a map of existing races by name
         const existingRaces = new Map<string, Race>();
-        this.plugin.settings.races.forEach(race => existingRaces.set(race.name, race));
+        this.plugin.npcSettings.races.forEach(race => existingRaces.set(race.name, race));
 
         // Add any missing default races
         defaultRaces.forEach(defaultRace => {
             if (!existingRaces.has(defaultRace.name)) {
                 console.log(`Adding missing race: ${defaultRace.name}`);
-                this.plugin.settings.races.push(defaultRace);
+                this.plugin.npcSettings.races.push(defaultRace);
             }
         });
     }
@@ -159,13 +156,13 @@ export class NPCGeneratorSettingsTab extends PluginSettingTab {
     private mergeDefaultClasses(defaultClasses: CharacterClass[]) {
         // Create a map of existing classes by name
         const existingClasses = new Map<string, CharacterClass>();
-        this.plugin.settings.classes.forEach(cls => existingClasses.set(cls.name, cls));
+        this.plugin.npcSettings.classes.forEach(cls => existingClasses.set(cls.name, cls));
 
         // Add any missing default classes
         defaultClasses.forEach(defaultClass => {
             if (!existingClasses.has(defaultClass.name)) {
                 console.log(`Adding missing class: ${defaultClass.name}`);
-                this.plugin.settings.classes.push(defaultClass);
+                this.plugin.npcSettings.classes.push(defaultClass);
             } else {
                 // For existing classes, merge in any missing subclasses
                 const existingClass = existingClasses.get(defaultClass.name);
@@ -214,9 +211,9 @@ export class NPCGeneratorSettingsTab extends PluginSettingTab {
             dropdown
             .addOption('fantasyStatblock', 'Fantasy Statblock')
             .addOption('basic', 'Basic Text')
-            .setValue(this.plugin.settings.statblockFormat)
+            .setValue(this.plugin.npcSettings.statblockFormat)
             .onChange(async(value) => {
-                this.plugin.settings.statblockFormat = value as "fantasyStatblock" | "basic";
+                this.plugin.npcSettings.statblockFormat = value as "fantasyStatblock" | "basic";
                 await this.plugin.saveSettings();
             });
         });
@@ -258,7 +255,7 @@ export class NPCGeneratorSettingsTab extends PluginSettingTab {
         racesContainer.style.marginTop = '20px';
 
         // Existing Races List as cards
-        this.plugin.settings.races.forEach((race, index) => {
+        this.plugin.npcSettings.races.forEach((race, index) => {
             const raceCard = racesContainer.createDiv('race-card');
             raceCard.style.border = '1px solid var(--background-modifier-border)';
             raceCard.style.borderRadius = '5px';
@@ -301,7 +298,7 @@ export class NPCGeneratorSettingsTab extends PluginSettingTab {
             .setIcon("trash")
             .setTooltip("Delete")
             .onClick(async() => {
-                this.plugin.settings.races.splice(index, 1);
+                this.plugin.npcSettings.races.splice(index, 1);
                 await this.plugin.saveSettings();
                 this.display();
             });
@@ -341,7 +338,7 @@ export class NPCGeneratorSettingsTab extends PluginSettingTab {
         classesContainer.style.marginTop = '15px';
 
         // Existing Classes List with collapsible details
-        this.plugin.settings.classes.forEach((characterClass, index) => {
+        this.plugin.npcSettings.classes.forEach((characterClass, index) => {
             const classItem = classesContainer.createDiv('class-item');
             classItem.style.marginBottom = '10px';
             classItem.style.border = '1px solid var(--background-modifier-border)';
@@ -509,7 +506,7 @@ export class NPCGeneratorSettingsTab extends PluginSettingTab {
             .setIcon('trash')
             .setTooltip('Delete Class')
             .onClick(async() => {
-                this.plugin.settings.classes.splice(index, 1);
+                this.plugin.npcSettings.classes.splice(index, 1);
                 await this.plugin.saveSettings();
                 this.display();
             });
@@ -556,7 +553,7 @@ export class NPCGeneratorSettingsTab extends PluginSettingTab {
         });
 
         // Existing Custom Parameters List
-        const customParams = this.plugin.settings.customParameters
+        const customParams = this.plugin.npcSettings.customParameters
             .filter(param =>
                 param.name !== 'spellcasting' &&
                 param.name !== 'possessions');
@@ -603,8 +600,8 @@ export class NPCGeneratorSettingsTab extends PluginSettingTab {
                     .setTooltip('Delete')
                     .onClick(async() => {
                         // Direct deletion without confirmation
-                        this.plugin.settings.customParameters =
-                            this.plugin.settings.customParameters.filter(p => p !== param);
+                        this.plugin.npcSettings.customParameters =
+                            this.plugin.npcSettings.customParameters.filter(p => p !== param);
 
                         await this.plugin.saveSettings();
                         // Refresh the view
@@ -690,13 +687,13 @@ export class NPCGeneratorSettingsTab extends PluginSettingTab {
 
                 if (existingParam) {
                     // Find and replace the existing parameter
-                    const index = this.plugin.settings.customParameters.indexOf(existingParam);
+                    const index = this.plugin.npcSettings.customParameters.indexOf(existingParam);
                     if (index !== -1) {
-                        this.plugin.settings.customParameters[index] = parameter;
+                        this.plugin.npcSettings.customParameters[index] = parameter;
                     }
                 } else {
                     // Add new parameter
-                    this.plugin.settings.customParameters.push(parameter);
+                    this.plugin.npcSettings.customParameters.push(parameter);
                 }
 
                 await this.plugin.saveSettings();
@@ -919,10 +916,10 @@ export class NPCGeneratorSettingsTab extends PluginSettingTab {
                 // Save the race
                 if (index !== undefined) {
                     // Update existing race
-                    this.plugin.settings.races[index] = raceToEdit;
+                    this.plugin.npcSettings.races[index] = raceToEdit;
                 } else {
                     // Add new race
-                    this.plugin.settings.races.push(raceToEdit);
+                    this.plugin.npcSettings.races.push(raceToEdit);
                 }
 
                 await this.plugin.saveSettings();
@@ -1187,9 +1184,9 @@ export class NPCGeneratorSettingsTab extends PluginSettingTab {
             
             // Save the class
             if (index !== undefined) {
-                this.plugin.settings.classes[index] = classToEdit;
+                this.plugin.npcSettings.classes[index] = classToEdit;
             } else {
-                this.plugin.settings.classes.push(classToEdit);
+                this.plugin.npcSettings.classes.push(classToEdit);
             }
             
             // Save settings and close modal
@@ -1383,7 +1380,7 @@ export class NPCGeneratorSettingsTab extends PluginSettingTab {
             }
             
             // Update the class in settings
-            this.plugin.settings.classes[classIndex] = characterClass;
+            this.plugin.npcSettings.classes[classIndex] = characterClass;
             
             // Save settings and refresh display
             await this.plugin.saveSettings();

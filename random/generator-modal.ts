@@ -1,5 +1,5 @@
 import { App, Modal, Notice } from 'obsidian';
-import { RandomGeneratorPlugin } from './plugin';
+import UnifiedGeneratorPlugin from '../main';
 import { Generator } from './types';
 import { generateFromTemplate } from './utils/generator';
 
@@ -7,17 +7,29 @@ import { generateFromTemplate } from './utils/generator';
  * Modal for generating random content
  */
 export class GeneratorModal extends Modal {
-    private plugin: RandomGeneratorPlugin;
+    private plugin: UnifiedGeneratorPlugin;
     private selectedGenerator: string = "";
     private resultEl: HTMLElement;
 
-    constructor(app: App, plugin: RandomGeneratorPlugin) {
+    constructor(app: App, plugin: UnifiedGeneratorPlugin) {
         super(app);
         this.plugin = plugin;
     }
 
     onOpen(): void {
         const { contentEl } = this;
+        contentEl.empty();
+        
+        this.renderContent(contentEl);
+    }
+
+    /**
+     * Render the modal content to a container
+     * This allows the content to be rendered either in this modal
+     * or in the unified generator modal
+     */
+    public renderContent(contentEl: HTMLElement): void {
+        // Clear any existing content
         contentEl.empty();
         contentEl.addClass('random-generator-modal');
 
@@ -31,13 +43,13 @@ export class GeneratorModal extends Modal {
             const selectEl = selectContainer.createEl('select', { cls: 'generator-select' });
             
             // Make sure we have generators before trying to populate dropdown
-            if (this.plugin.settings.generators && this.plugin.settings.generators.length > 0) {
-                this.plugin.settings.generators.forEach(generator => {
+            if (this.plugin.randomSettings.generators && this.plugin.randomSettings.generators.length > 0) {
+                this.plugin.randomSettings.generators.forEach(generator => {
                     selectEl.createEl('option', { value: generator.name, text: generator.name });
                 });
                 
                 // Set initial selection
-                this.selectedGenerator = this.plugin.settings.generators[0].name;
+                this.selectedGenerator = this.plugin.randomSettings.generators[0].name;
             } else {
                 selectEl.createEl('option', { value: "", text: "No generators available" });
                 this.selectedGenerator = "";
@@ -72,7 +84,7 @@ export class GeneratorModal extends Modal {
                 this.generateResult();
             }
         } catch (error) {
-            console.error('Error in modal onOpen:', error);
+            console.error('Error in modal rendering:', error);
             contentEl.createEl('p', { text: 'An error occurred. Please check the console for details.' });
         }
     }
@@ -87,8 +99,8 @@ export class GeneratorModal extends Modal {
      */
     generateResult(): void {
         try {
-            if (this.selectedGenerator && this.plugin.settings.generators) {
-                const generator = this.plugin.settings.generators.find(g => g.name === this.selectedGenerator);
+            if (this.selectedGenerator && this.plugin.randomSettings.generators) {
+                const generator = this.plugin.randomSettings.generators.find(g => g.name === this.selectedGenerator);
                 if (generator) {
                     const result = generateFromTemplate(generator);
                     this.resultEl.setText(result);

@@ -7,8 +7,6 @@ import {
     Modal,
     Notice
 } from 'obsidian';
-
-import DungeonGeneratorPlugin from '../main';
 import { 
     DungeonType, 
     DungeonTypeConfig, 
@@ -16,6 +14,7 @@ import {
     DungeonGeneratorSettings,
     DungeonContentType
 } from './settings';
+import DungeonGeneratorPlugin from '../../main';
 
 export class DungeonGeneratorSettingTab extends PluginSettingTab {
     private plugin: DungeonGeneratorPlugin;
@@ -105,15 +104,15 @@ export class DungeonGeneratorSettingTab extends PluginSettingTab {
             .setName('Default Dungeon Type')
             .setDesc('The default dungeon type when opening the generator')
             .addDropdown(dropdown => {
-                const dungeonTypes = Object.keys(this.plugin.settings.dungeonTypes) as DungeonType[];
+                const dungeonTypes = Object.keys(this.plugin.dungeonSettings.dungeonTypes) as DungeonType[];
                 
                 dungeonTypes.forEach(type => {
                     dropdown.addOption(type, type);
                 });
                 
-                dropdown.setValue(this.plugin.settings.defaultDungeonType);
+                dropdown.setValue(this.plugin.dungeonSettings.defaultDungeonType);
                 dropdown.onChange(async value => {
-                    this.plugin.settings.defaultDungeonType = value as DungeonType;
+                    this.plugin.dungeonSettings.defaultDungeonType = value as DungeonType;
                     await this.plugin.saveSettings();
                 });
             });
@@ -148,12 +147,12 @@ export class DungeonGeneratorSettingTab extends PluginSettingTab {
             .setDesc('The color of walls and obstacles')
             .addText(text => {
                 text.setPlaceholder('#4a9ebd')
-                    .setValue(this.plugin.settings.mapStyle?.wallColor || '#4a9ebd')
+                    .setValue(this.plugin.dungeonSettings.mapStyle?.wallColor || '#4a9ebd')
                     .onChange(async value => {
-                        if (!this.plugin.settings.mapStyle) {
-                            this.plugin.settings.mapStyle = { ...DEFAULT_MAP_STYLE };
+                        if (!this.plugin.dungeonSettings.mapStyle) {
+                            this.plugin.dungeonSettings.mapStyle = { ...DEFAULT_MAP_STYLE };
                         }
-                        this.plugin.settings.mapStyle.wallColor = value;
+                        this.plugin.dungeonSettings.mapStyle.wallColor = value;
                         await this.plugin.saveSettings();
                     });
                 
@@ -173,12 +172,12 @@ export class DungeonGeneratorSettingTab extends PluginSettingTab {
             .setDesc('The color of open floor spaces')
             .addText(text => {
                 text.setPlaceholder('#ffffff')
-                    .setValue(this.plugin.settings.mapStyle?.floorColor || '#ffffff')
+                    .setValue(this.plugin.dungeonSettings.mapStyle?.floorColor || '#ffffff')
                     .onChange(async value => {
-                        if (!this.plugin.settings.mapStyle) {
-                            this.plugin.settings.mapStyle = { ...DEFAULT_MAP_STYLE };
+                        if (!this.plugin.dungeonSettings.mapStyle) {
+                            this.plugin.dungeonSettings.mapStyle = { ...DEFAULT_MAP_STYLE };
                         }
-                        this.plugin.settings.mapStyle.floorColor = value;
+                        this.plugin.dungeonSettings.mapStyle.floorColor = value;
                         await this.plugin.saveSettings();
                     });
                 
@@ -198,12 +197,12 @@ export class DungeonGeneratorSettingTab extends PluginSettingTab {
             .setDesc('The color of the corridors between rooms')
             .addText(text => {
                 text.setPlaceholder('#cccccc')
-                    .setValue(this.plugin.settings.mapStyle?.corridorColor || '#cccccc')
+                    .setValue(this.plugin.dungeonSettings.mapStyle?.corridorColor || '#cccccc')
                     .onChange(async value => {
-                        if (!this.plugin.settings.mapStyle) {
-                            this.plugin.settings.mapStyle = { ...DEFAULT_MAP_STYLE };
+                        if (!this.plugin.dungeonSettings.mapStyle) {
+                            this.plugin.dungeonSettings.mapStyle = { ...DEFAULT_MAP_STYLE };
                         }
-                        this.plugin.settings.mapStyle.corridorColor = value;
+                        this.plugin.dungeonSettings.mapStyle.corridorColor = value;
                         await this.plugin.saveSettings();
                     });
                 
@@ -223,12 +222,12 @@ export class DungeonGeneratorSettingTab extends PluginSettingTab {
             .setDesc('The color of grid lines')
             .addText(text => {
                 text.setPlaceholder('#cccccc')
-                    .setValue(this.plugin.settings.mapStyle?.gridColor || '#cccccc')
+                    .setValue(this.plugin.dungeonSettings.mapStyle?.gridColor || '#cccccc')
                     .onChange(async value => {
-                        if (!this.plugin.settings.mapStyle) {
-                            this.plugin.settings.mapStyle = { ...DEFAULT_MAP_STYLE };
+                        if (!this.plugin.dungeonSettings.mapStyle) {
+                            this.plugin.dungeonSettings.mapStyle = { ...DEFAULT_MAP_STYLE };
                         }
-                        this.plugin.settings.mapStyle.gridColor = value;
+                        this.plugin.dungeonSettings.mapStyle.gridColor = value;
                         await this.plugin.saveSettings();
                     });
                 
@@ -248,12 +247,12 @@ export class DungeonGeneratorSettingTab extends PluginSettingTab {
             .setDesc('The color of room numbers and labels')
             .addText(text => {
                 text.setPlaceholder('#000000')
-                    .setValue(this.plugin.settings.mapStyle?.textColor || '#000000')
+                    .setValue(this.plugin.dungeonSettings.mapStyle?.textColor || '#000000')
                     .onChange(async value => {
-                        if (!this.plugin.settings.mapStyle) {
-                            this.plugin.settings.mapStyle = { ...DEFAULT_MAP_STYLE };
+                        if (!this.plugin.dungeonSettings.mapStyle) {
+                            this.plugin.dungeonSettings.mapStyle = { ...DEFAULT_MAP_STYLE };
                         }
-                        this.plugin.settings.mapStyle.textColor = value;
+                        this.plugin.dungeonSettings.mapStyle.textColor = value;
                         await this.plugin.saveSettings();
                     });
                 
@@ -272,13 +271,13 @@ export class DungeonGeneratorSettingTab extends PluginSettingTab {
             .setName('Use Color-Coding')
             .setDesc('Color-code rooms based on their content type')
             .addToggle(toggle => {
-                toggle.setValue(this.plugin.settings.mapStyle?.useColors !== undefined ? 
-                               this.plugin.settings.mapStyle.useColors : true)
+                toggle.setValue(this.plugin.dungeonSettings.mapStyle?.useColors !== undefined ? 
+                               this.plugin.dungeonSettings.mapStyle.useColors : true)
                     .onChange(async value => {
-                        if (!this.plugin.settings.mapStyle) {
-                            this.plugin.settings.mapStyle = { ...DEFAULT_MAP_STYLE };
+                        if (!this.plugin.dungeonSettings.mapStyle) {
+                            this.plugin.dungeonSettings.mapStyle = { ...DEFAULT_MAP_STYLE };
                         }
-                        this.plugin.settings.mapStyle.useColors = value;
+                        this.plugin.dungeonSettings.mapStyle.useColors = value;
                         await this.plugin.saveSettings();
                     });
             });
@@ -292,12 +291,12 @@ export class DungeonGeneratorSettingTab extends PluginSettingTab {
                 dropdown.addOption('gap', 'Gap');
                 dropdown.addOption('none', 'None');
                 
-                dropdown.setValue(this.plugin.settings.mapStyle?.doorStyle || 'line');
+                dropdown.setValue(this.plugin.dungeonSettings.mapStyle?.doorStyle || 'line');
                 dropdown.onChange(async value => {
-                    if (!this.plugin.settings.mapStyle) {
-                        this.plugin.settings.mapStyle = { ...DEFAULT_MAP_STYLE };
+                    if (!this.plugin.dungeonSettings.mapStyle) {
+                        this.plugin.dungeonSettings.mapStyle = { ...DEFAULT_MAP_STYLE };
                     }
-                    this.plugin.settings.mapStyle.doorStyle = value as 'line' | 'gap' | 'none';
+                    this.plugin.dungeonSettings.mapStyle.doorStyle = value as 'line' | 'gap' | 'none';
                     await this.plugin.saveSettings();
                 });
             });
@@ -307,12 +306,12 @@ export class DungeonGeneratorSettingTab extends PluginSettingTab {
             .setName('Show Grid')
             .setDesc('Toggle visibility of the grid lines on the dungeon map')
             .addToggle(toggle => {
-                toggle.setValue(this.plugin.settings.mapStyle?.showGrid !== false)
+                toggle.setValue(this.plugin.dungeonSettings.mapStyle?.showGrid !== false)
                     .onChange(async value => {
-                        if (!this.plugin.settings.mapStyle) {
-                            this.plugin.settings.mapStyle = { ...DEFAULT_MAP_STYLE };
+                        if (!this.plugin.dungeonSettings.mapStyle) {
+                            this.plugin.dungeonSettings.mapStyle = { ...DEFAULT_MAP_STYLE };
                         }
-                        this.plugin.settings.mapStyle.showGrid = value;
+                        this.plugin.dungeonSettings.mapStyle.showGrid = value;
                         await this.plugin.saveSettings();
                     });
             });
@@ -345,7 +344,7 @@ export class DungeonGeneratorSettingTab extends PluginSettingTab {
             });
 
         // Existing Dungeon Types List
-        const dungeonTypes = Object.keys(this.plugin.settings.dungeonTypes) as DungeonType[];
+        const dungeonTypes = Object.keys(this.plugin.dungeonSettings.dungeonTypes) as DungeonType[];
         
         if (dungeonTypes.length === 0) {
             dungeonTypesSection.createEl('p', {
@@ -358,7 +357,7 @@ export class DungeonGeneratorSettingTab extends PluginSettingTab {
             typesContainer.style.marginTop = '15px';
             
             dungeonTypes.forEach(typeKey => {
-                const dungeonType = this.plugin.settings.dungeonTypes[typeKey];
+                const dungeonType = this.plugin.dungeonSettings.dungeonTypes[typeKey];
                 
                 const typeItem = typesContainer.createDiv('dungeon-type-item');
                 typeItem.style.marginBottom = '10px';
@@ -487,7 +486,7 @@ export class DungeonGeneratorSettingTab extends PluginSettingTab {
                     .setTooltip('Delete Dungeon Type')
                     .onClick(async() => {
                         // Direct deletion without confirmation
-                        delete this.plugin.settings.dungeonTypes[typeKey];
+                        delete this.plugin.dungeonSettings.dungeonTypes[typeKey];
                         await this.plugin.saveSettings();
                         this.display();
                     });
@@ -829,14 +828,14 @@ export class DungeonGeneratorSettingTab extends PluginSettingTab {
                 newTypeKey = baseKey as DungeonType;
                 
                 // Check if key exists and generate a unique one if needed
-                while (Object.prototype.hasOwnProperty.call(this.plugin.settings.dungeonTypes, newTypeKey)) {
+                while (Object.prototype.hasOwnProperty.call(this.plugin.dungeonSettings.dungeonTypes, newTypeKey)) {
                     counter++;
                     newTypeKey = `${baseKey}${counter}` as DungeonType;
                 }
             }
             
             // Save the dungeon type with explicit type casting
-            this.plugin.settings.dungeonTypes[newTypeKey as DungeonType] = typeToEdit;
+            this.plugin.dungeonSettings.dungeonTypes[newTypeKey as DungeonType] = typeToEdit;
             await this.plugin.saveSettings();
             
             // Close the modal and refresh the settings
@@ -881,15 +880,15 @@ export class DungeonGeneratorSettingTab extends PluginSettingTab {
             
             // Update the dungeon types
             for (const typeKey in DEFAULT_SETTINGS.dungeonTypes) {
-                this.plugin.settings.dungeonTypes[typeKey as DungeonType] = 
+                this.plugin.dungeonSettings.dungeonTypes[typeKey as DungeonType] = 
                     JSON.parse(JSON.stringify(DEFAULT_SETTINGS.dungeonTypes[typeKey as DungeonType]));
             }
             
             // Make sure the default map style is set
-            this.plugin.settings.mapStyle = { ...DEFAULT_MAP_STYLE };
+            this.plugin.dungeonSettings.mapStyle = { ...DEFAULT_MAP_STYLE };
             
             // Make sure the default dungeon type is set
-            this.plugin.settings.defaultDungeonType = DEFAULT_SETTINGS.defaultDungeonType;
+            this.plugin.dungeonSettings.defaultDungeonType = DEFAULT_SETTINGS.defaultDungeonType;
             
             // Save settings
             await this.plugin.saveSettings();

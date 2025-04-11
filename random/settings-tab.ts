@@ -1,17 +1,16 @@
 import { App, PluginSettingTab, Setting, Notice, Modal, ButtonComponent, ExtraButtonComponent } from 'obsidian';
-import { RandomGeneratorPlugin } from './plugin';
+import UnifiedGeneratorPlugin from '../main';
 import { Generator } from './types';
 import { duplicateGenerator, validateGenerator } from './utils/generator';
-import { AddGeneratorModal } from './add-generator-modal';
 
 /**
  * Settings tab for the Random Generator plugin
  */
 export class RandomGeneratorSettingTab extends PluginSettingTab {
-    private plugin: RandomGeneratorPlugin;
+    private plugin: UnifiedGeneratorPlugin;
     private activeTab: string = 'general';
 
-    constructor(app: App, plugin: RandomGeneratorPlugin) {
+    constructor(app: App, plugin: UnifiedGeneratorPlugin) {
         super(app, plugin);
         this.plugin = plugin;
     }
@@ -147,7 +146,7 @@ export class RandomGeneratorSettingTab extends PluginSettingTab {
         generatorsContainer.style.marginTop = '20px';
 
         // Display existing generators as cards
-        this.plugin.settings.generators.forEach((generator, index) => {
+        this.plugin.randomSettings.generators.forEach((generator, index) => {
             const generatorCard = generatorsContainer.createDiv('generator-card');
             generatorCard.style.border = '1px solid var(--background-modifier-border)';
             generatorCard.style.borderRadius = '5px';
@@ -226,7 +225,7 @@ export class RandomGeneratorSettingTab extends PluginSettingTab {
                 .setTooltip("Duplicate")
                 .onClick(async () => {
                     const newGenerator = duplicateGenerator(generator);
-                    this.plugin.settings.generators.push(newGenerator);
+                    this.plugin.randomSettings.generators.push(newGenerator);
                     await this.plugin.saveSettings();
                     this.display();
                 });
@@ -236,7 +235,7 @@ export class RandomGeneratorSettingTab extends PluginSettingTab {
                 .setIcon("trash")
                 .setTooltip("Delete")
                 .onClick(async () => {
-                    this.plugin.settings.generators.splice(index, 1);
+                    this.plugin.randomSettings.generators.splice(index, 1);
                     await this.plugin.saveSettings();
                     this.display();
                 });
@@ -262,9 +261,9 @@ export class RandomGeneratorSettingTab extends PluginSettingTab {
             .setName('Use Custom CSS')
             .setDesc('Enable using a custom CSS file for styling the generator')
             .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.customCSSEnabled)
+                .setValue(this.plugin.randomSettings.customCSSEnabled)
                 .onChange(async (value) => {
-                    this.plugin.settings.customCSSEnabled = value;
+                    this.plugin.randomSettings.customCSSEnabled = value;
                     await this.plugin.saveSettings();
                     this.plugin.loadCSS();
                 }));
@@ -275,11 +274,11 @@ export class RandomGeneratorSettingTab extends PluginSettingTab {
             .setDesc('Path to your custom CSS file in the vault (relative to vault root)')
             .addText(text => text
                 .setPlaceholder('path/to/custom-style.css')
-                .setValue(this.plugin.settings.customCSSPath)
+                .setValue(this.plugin.randomSettings.customCSSPath)
                 .onChange(async (value) => {
-                    this.plugin.settings.customCSSPath = value;
+                    this.plugin.randomSettings.customCSSPath = value;
                     await this.plugin.saveSettings();
-                    if (this.plugin.settings.customCSSEnabled) {
+                    if (this.plugin.randomSettings.customCSSEnabled) {
                         this.plugin.loadCSS();
                     }
                 }));
@@ -330,7 +329,7 @@ export class RandomGeneratorSettingTab extends PluginSettingTab {
     private async exportGenerators(): Promise<void> {
         try {
             // Create a JSON string of all generators
-            const exportData = JSON.stringify(this.plugin.settings.generators, null, 2);
+            const exportData = JSON.stringify(this.plugin.randomSettings.generators, null, 2);
             
             // Create filename with date
             const date = new Date();
@@ -399,7 +398,7 @@ export class RandomGeneratorSettingTab extends PluginSettingTab {
                         let finalName = baseName;
                         
                         // Check if name already exists
-                        while (this.plugin.settings.generators.some(g => g.name === finalName)) {
+                        while (this.plugin.randomSettings.generators.some(g => g.name === finalName)) {
                             finalName = `${baseName} (${nameCounter})`;
                             nameCounter++;
                         }
@@ -408,7 +407,7 @@ export class RandomGeneratorSettingTab extends PluginSettingTab {
                         generator.name = finalName;
                         
                         // Add to settings
-                        this.plugin.settings.generators.push(generator);
+                        this.plugin.randomSettings.generators.push(generator);
                         validCount++;
                     }
                 }
@@ -437,16 +436,16 @@ export class RandomGeneratorSettingTab extends PluginSettingTab {
      */
     private async restoreDefaultGenerators(): Promise<void> {
         // Restore from default settings
-        const defaultGenerators = JSON.parse(JSON.stringify(this.plugin.getDefaultSettings().generators));
+        const defaultGenerators = JSON.parse(JSON.stringify(this.plugin.randomSettings.generators));
         
         // For each default generator
         for (const defaultGenerator of defaultGenerators) {
             // Check if a generator with this name already exists
-            const existingIndex = this.plugin.settings.generators.findIndex(g => g.name === defaultGenerator.name);
+            const existingIndex = this.plugin.randomSettings.generators.findIndex(g => g.name === defaultGenerator.name);
             
             if (existingIndex === -1) {
                 // If no generator with this name exists, add it
-                this.plugin.settings.generators.push(defaultGenerator);
+                this.plugin.randomSettings.generators.push(defaultGenerator);
             }
         }
         
@@ -721,9 +720,9 @@ export class RandomGeneratorSettingTab extends PluginSettingTab {
             
             // Save the generator
             if (index !== undefined) {
-                this.plugin.settings.generators[index] = generatorToEdit;
+                this.plugin.randomSettings.generators[index] = generatorToEdit;
             } else {
-                this.plugin.settings.generators.push(generatorToEdit);
+                this.plugin.randomSettings.generators.push(generatorToEdit);
             }
             
             await this.plugin.saveSettings();

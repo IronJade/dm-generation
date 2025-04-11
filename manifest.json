@@ -1,0 +1,10 @@
+{
+    "id": "unified-generator",
+    "name": "Unified Generator",
+    "version": "1.0.0",
+    "minAppVersion": "0.15.0",
+    "description": "A unified plugin for generating NPCs, dungeons, and random content for tabletop RPGs.",
+    "author": "IronJade",
+    "authorUrl": "https://github.com/IronJade",
+    "isDesktopOnly": false
+}

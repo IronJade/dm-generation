@@ -1,38 +1,47 @@
-import { Modal, App, Notice, MarkdownView } from 'obsidian';
-import type NPCGenerator from '../main';
-import { 
-    NPCGenerationOptions, 
-    NPC, 
-    Alignment 
-} from '../types';
+import { Modal, App, Notice, Setting, MarkdownView } from 'obsidian';
+import UnifiedGeneratorPlugin from '../../main';
+import { NPC, NPCGenerationOptions } from '../types';
 
 export class NPCGeneratorModal extends Modal {
-    private plugin: NPCGenerator;
+    private plugin: UnifiedGeneratorPlugin;
     private npc: NPC | null = null;
 
-    constructor(app: App, plugin: NPCGenerator) {
+    constructor(app: App, plugin: UnifiedGeneratorPlugin) {
         super(app);
         this.plugin = plugin;
     }
 
     onOpen() {
         const { contentEl } = this;
+        contentEl.empty();
         
+        // Use the shared rendering method
+        this.renderContent(contentEl);
+    }
+
+    /**
+     * Render the modal content to a container
+     * This allows the content to be rendered either in this modal
+     * or in the unified generator modal
+     */
+    public renderContent(contentEl: HTMLElement) {
         // Clear any existing content
         contentEl.empty();
         
-        // Add a container for better styling
-        const modalContainer = contentEl.createDiv('npc-generator-container');
-        modalContainer.addClass('npc-generator-container');
+        // Apply modal styling
+        contentEl.addClass('npc-generator-modal');
         
         // Create modal title with better styling
-        const titleEl = modalContainer.createEl('h2', { text: 'Generate NPC' });
+        const titleEl = contentEl.createEl('h2', {
+            text: 'Generate NPC',
+            cls: 'npc-generator-title'
+        });
         titleEl.style.borderBottom = '1px solid var(--background-modifier-border)';
         titleEl.style.paddingBottom = '10px';
         titleEl.style.marginBottom = '20px';
         
         // Create generation options container with grid layout
-        const optionsContainer = modalContainer.createDiv('npc-generation-options');
+        const optionsContainer = contentEl.createDiv('npc-generation-options');
         optionsContainer.style.display = 'grid';
         optionsContainer.style.gridTemplateColumns = '1fr 1fr';
         optionsContainer.style.gap = '12px';
@@ -52,7 +61,7 @@ export class NPCGeneratorModal extends Modal {
         const raceContainer = this.createStyledSelect(
             optionsContainer, 
             'Race', 
-            this.plugin.settings.races.map(race => race.name)
+            this.plugin.npcSettings.races.map(race => race.name)
         );
         const raceSelect = raceContainer.querySelector('select') as HTMLSelectElement;
         
@@ -60,7 +69,7 @@ export class NPCGeneratorModal extends Modal {
         const classContainer = this.createStyledSelect(
             optionsContainer, 
             'Class', 
-            this.plugin.settings.classes.map(characterClass => characterClass.name)
+            this.plugin.npcSettings.classes.map(characterClass => characterClass.name)
         );
         const classSelect = classContainer.querySelector('select') as HTMLSelectElement;
         
@@ -74,7 +83,7 @@ export class NPCGeneratorModal extends Modal {
         
         // Update subclass options when class changes
         classSelect.addEventListener('change', () => {
-            const selectedClass = this.plugin.settings.classes.find(c => c.name === classSelect.value);
+            const selectedClass = this.plugin.npcSettings.classes.find(c => c.name === classSelect.value);
             
             // Clear existing options except "None"
             while (subclassSelect.options.length > 1) {
@@ -99,21 +108,8 @@ export class NPCGeneratorModal extends Modal {
         // Trigger the change event to initialize subclass options
         classSelect.dispatchEvent(new Event('change'));
         
-        // Alignment selection
-        const alignments: Alignment[] = [
-            'Lawful Good', 'Neutral Good', 'Chaotic Good',
-            'Lawful Neutral', 'Neutral', 'Chaotic Neutral',
-            'Lawful Evil', 'Neutral Evil', 'Chaotic Evil'
-        ];
-        const alignmentContainer = this.createStyledSelect(
-            optionsContainer, 
-            'Alignment', 
-            alignments
-        );
-        const alignmentSelect = alignmentContainer.querySelector('select') as HTMLSelectElement;
-        
         // Custom parameters container with better styling
-        const customParamsContainer = modalContainer.createDiv('custom-parameters');
+        const customParamsContainer = contentEl.createDiv('custom-parameters');
         customParamsContainer.style.marginTop = '20px';
         customParamsContainer.style.marginBottom = '20px';
         
@@ -123,7 +119,7 @@ export class NPCGeneratorModal extends Modal {
         customParamsTitle.style.marginBottom = '12px';
         
         // Add custom parameter inputs based on plugin settings
-        const enabledParams = this.plugin.settings.customParameters.filter(p => p.enabled);
+        const enabledParams = this.plugin.npcSettings.customParameters.filter(p => p.enabled);
         
         if (enabledParams.length === 0) {
             customParamsContainer.createEl('p', { 
@@ -151,7 +147,7 @@ export class NPCGeneratorModal extends Modal {
         }
         
         // Button container with better styling
-        const buttonContainer = modalContainer.createDiv('npc-generation-buttons');
+        const buttonContainer = contentEl.createDiv('npc-generation-buttons');
         buttonContainer.style.display = 'flex';
         buttonContainer.style.justifyContent = 'space-between';
         buttonContainer.style.marginTop = '20px';
@@ -171,31 +167,14 @@ export class NPCGeneratorModal extends Modal {
                 level: parseInt(levelInput.value, 10),
                 race: raceSelect.value,
                 class: classSelect.value,
-                subclass: subclassSelect.value, // Always include the subclass selection
-                alignment: alignmentSelect.value as Alignment,
+                subclass: subclassSelect.value,
                 customParameters: {}
             };
             
-            console.log(`Selected options: Level ${options.level}, Race ${options.race}, Class ${options.class}, Subclass ${options.subclass}`);
-            
-            
-            // Collect custom parameter values
-            enabledParams.forEach(param => {
-                if (['spellcasting', 'possessions'].includes(param.name)) return;
-                
-                const input = customParamsContainer.querySelector(
-                    `input[placeholder="Enter ${param.label.toLowerCase()}"]`
-                ) as HTMLInputElement;
-                
-                if (input && input.value.trim()) {
-                    options.customParameters![param.name] = input.value.trim();
-                }
-            });
-            
             // Generate NPC
             try {
-                this.npc = this.plugin.generateNPC(options);
-                this.showResults();
+                this.npc = this.plugin.npcGenerator.generateNPC(options);
+                this.showResults(contentEl);
             } catch (error) {
                 console.error('NPC Generation Error:', error);
                 new Notice('Failed to generate NPC. Check console for details.');
@@ -208,85 +187,21 @@ export class NPCGeneratorModal extends Modal {
         
         randomButton.addEventListener('click', () => {
             try {
-                this.npc = this.plugin.generateNPC();
-                this.showResults();
+                this.npc = this.plugin.npcGenerator.generateNPC();
+                this.showResults(contentEl);
             } catch (error) {
                 console.error('Random NPC Generation Error:', error);
                 new Notice('Failed to generate random NPC. Check console for details.');
             }
         });
     }
-    
-    /**
-     * Create a styled input element
-     */
-    private createStyledInput(
-        container: HTMLElement, 
-        label: string, 
-        type: string, 
-        defaultValue: string = '', 
-        additionalAttributes: Record<string, string> = {}
-    ): HTMLDivElement {
-        const inputContainer = container.createDiv('labeled-input');
-        inputContainer.style.display = 'flex';
-        inputContainer.style.flexDirection = 'column';
-        
-        const labelEl = inputContainer.createEl('label', { text: label });
-        labelEl.style.fontWeight = 'bold';
-        labelEl.style.marginBottom = '4px';
-        
-        const input = inputContainer.createEl('input', {
-            type,
-            value: defaultValue,
-            ...additionalAttributes
-        });
-        input.style.backgroundColor = 'var(--background-primary)';
-        input.style.border = '1px solid var(--background-modifier-border)';
-        input.style.borderRadius = '4px';
-        input.style.padding = '6px 8px';
-        
-        return inputContainer;
-    }
-    
-    /**
-     * Create a styled select element
-     */
-    private createStyledSelect(
-        container: HTMLElement, 
-        label: string, 
-        options: string[]
-    ): HTMLDivElement {
-        const selectContainer = container.createDiv('labeled-select');
-        selectContainer.style.display = 'flex';
-        selectContainer.style.flexDirection = 'column';
-        
-        const labelEl = selectContainer.createEl('label', { text: label });
-        labelEl.style.fontWeight = 'bold';
-        labelEl.style.marginBottom = '4px';
-        
-        const select = selectContainer.createEl('select');
-        select.style.backgroundColor = 'var(--background-primary)';
-        select.style.border = '1px solid var(--background-modifier-border)';
-        select.style.borderRadius = '4px';
-        select.style.padding = '6px 8px';
-        
-        options.forEach(option => {
-            select.createEl('option', { 
-                text: option, 
-                value: option 
-            });
-        });
-        
-        return selectContainer;
-    }
 
     /**
      * Display generated NPC results
      */
-    private showResults() {
+    private showResults(contentEl: HTMLElement): void {
         if (!this.npc) return;
     
-        const { contentEl } = this;
         contentEl.empty();
     
         // Create styled container
@@ -371,7 +286,7 @@ export class NPCGeneratorModal extends Modal {
         statblockTitle.style.borderBottom = '1px solid var(--background-modifier-border)';
         
         const statblockText = statblockContainer.createEl('textarea', {
-            text: this.plugin.formatStatblock(this.npc)
+            text: this.plugin.npcGenerator.formatStatblock(this.npc)
         });
         statblockText.setAttribute('readonly', 'true');
         statblockText.style.width = '100%';
@@ -394,7 +309,7 @@ export class NPCGeneratorModal extends Modal {
     
         // Refresh NPC button
         const refreshButton = buttonContainer.createEl('button', { text: 'Refresh NPC' });
-		refreshButton.style.minWidth = '80px';
+        refreshButton.style.minWidth = '80px';
         refreshButton.addEventListener('click', () => {
             // Get the same options but generate a new NPC
             const options = {
@@ -405,17 +320,17 @@ export class NPCGeneratorModal extends Modal {
                 alignment: this.npc!.alignment
             };
             
-            this.npc = this.plugin.generateNPC(options);
-            this.showResults();
+            this.npc = this.plugin.npcGenerator.generateNPC(options);
+            this.showResults(contentEl);
         });
 
         // Regenerate NPC button
         const regenerateButton = buttonContainer.createEl('button', { text: 'Random NPC' });
-		regenerateButton.style.minWidth = '80px';
+        regenerateButton.style.minWidth = '80px';
         regenerateButton.addEventListener('click', () => {
             // Generate a completely random new NPC with no specific options
-            this.npc = this.plugin.generateNPC();
-            this.showResults();
+            this.npc = this.plugin.npcGenerator.generateNPC();
+            this.showResults(contentEl);
         });
     
         // Insert into Note button
@@ -429,13 +344,16 @@ export class NPCGeneratorModal extends Modal {
         // Back button
         const backButton = buttonContainer.createEl('button', { text: 'Generate Another NPC' });
         backButton.style.minWidth = '120px';
-        backButton.addEventListener('click', () => this.onOpen());
+        backButton.addEventListener('click', () => {
+            // Back to the generator form
+            this.renderContent(contentEl);
+        });
     }
 
     /**
      * Insert statblock into the current active note
      */
-    private insertStatblockIntoNote() {
+    private insertStatblockIntoNote(): void {
         if (!this.npc) return;
 
         try {
@@ -453,7 +371,7 @@ export class NPCGeneratorModal extends Modal {
 
             // Insert statblock
             const editor = activeEditor.editor;
-            editor.replaceSelection(this.plugin.formatStatblock(this.npc));
+            editor.replaceSelection(this.plugin.npcGenerator.formatStatblock(this.npc));
 
             // Close modal and show success notice
             this.close();
@@ -467,5 +385,68 @@ export class NPCGeneratorModal extends Modal {
     onClose() {
         const { contentEl } = this;
         contentEl.empty();
+    }
+    
+    /**
+     * Create a styled input element
+     */
+    private createStyledInput(
+        container: HTMLElement, 
+        label: string, 
+        type: string, 
+        defaultValue: string = '', 
+        additionalAttributes: Record<string, string> = {}
+    ): HTMLDivElement {
+        const inputContainer = container.createDiv('labeled-input');
+        inputContainer.style.display = 'flex';
+        inputContainer.style.flexDirection = 'column';
+        
+        const labelEl = inputContainer.createEl('label', { text: label });
+        labelEl.style.fontWeight = 'bold';
+        labelEl.style.marginBottom = '4px';
+        
+        const input = inputContainer.createEl('input', {
+            type,
+            value: defaultValue,
+            ...additionalAttributes
+        });
+        input.style.backgroundColor = 'var(--background-primary)';
+        input.style.border = '1px solid var(--background-modifier-border)';
+        input.style.borderRadius = '4px';
+        input.style.padding = '6px 8px';
+        
+        return inputContainer;
+    }
+    
+    /**
+     * Create a styled select element
+     */
+    private createStyledSelect(
+        container: HTMLElement, 
+        label: string, 
+        options: string[]
+    ): HTMLDivElement {
+        const selectContainer = container.createDiv('labeled-select');
+        selectContainer.style.display = 'flex';
+        selectContainer.style.flexDirection = 'column';
+        
+        const labelEl = selectContainer.createEl('label', { text: label });
+        labelEl.style.fontWeight = 'bold';
+        labelEl.style.marginBottom = '4px';
+        
+        const select = selectContainer.createEl('select');
+        select.style.backgroundColor = 'var(--background-primary)';
+        select.style.border = '1px solid var(--background-modifier-border)';
+        select.style.borderRadius = '4px';
+        select.style.padding = '6px 8px';
+        
+        options.forEach(option => {
+            select.createEl('option', { 
+                text: option, 
+                value: option 
+            });
+        });
+        
+        return selectContainer;
     }
 }

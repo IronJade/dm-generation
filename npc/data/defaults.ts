@@ -1,4 +1,3 @@
-// src/data/defaults.ts
 import { Race, CharacterClass } from '../types';
 
 export const defaultRaces: Race[] = [

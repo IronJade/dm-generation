@@ -828,7 +828,7 @@ export class DungeonGenerator {
      */
     private findConnectedRoomId(doorX: number, doorY: number, currentRoomId: number, rooms: Room[]): number {
         // Find the room that is closest to this door location and not the current room
-        let closestRoom = null;
+        let closestRoom: Room | null = null;
         let minDistance = Infinity;
 
         for (const room of rooms) {

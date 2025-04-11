@@ -1,0 +1,30 @@
+{
+  "name": "unified-generator",
+  "version": "1.0.0",
+  "description": "A unified plugin for generating NPCs, dungeons, and random content for tabletop RPGs.",
+  "main": "main.js",
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+    "version": "node version-bump.mjs && git add manifest.json versions.json"
+  },
+  "keywords": [
+    "obsidian",
+    "generator",
+    "random",
+    "rpg",
+    "writing"
+  ],
+  "author": "IronJade",
+  "license": "MIT",
+  "dependencies": {
+    "obsidian": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "^16.11.6",
+    "builtin-modules": "^3.3.0",
+    "esbuild": "^0.25.2",
+    "tslib": "^2.8.1",
+    "typescript": "^4.8.4"
+  }
+}

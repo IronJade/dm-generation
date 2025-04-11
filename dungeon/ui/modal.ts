@@ -1,24 +1,38 @@
-import { App, Modal, Notice, Setting, MarkdownView, Editor } from 'obsidian';
-import { DungeonGeneratorPlugin } from '../main';
-import { DungeonSize, DungeonType } from '../settings/settings';
+import { App, Modal, Notice, Setting, MarkdownView } from 'obsidian';
+import { DungeonType } from '../settings/settings';
+import UnifiedGeneratorPlugin from '../../main';
+import { DungeonSize } from '../settings/settings';
 import { GeneratedDungeon } from '../types';
 
 export class DungeonGeneratorModal extends Modal {
-    private plugin: DungeonGeneratorPlugin;
-    private dungeonType: DungeonType;
+    private plugin: UnifiedGeneratorPlugin;
+    private dungeonType: string;
     private size: DungeonSize;
     private generatedDungeon: GeneratedDungeon | null;
 
-    constructor(app: App, plugin: DungeonGeneratorPlugin) {
+    constructor(app: App, plugin: UnifiedGeneratorPlugin) {
         super(app);
         this.plugin = plugin;
-        this.dungeonType = plugin.settings.defaultDungeonType;
+        this.dungeonType = plugin.dungeonSettings.defaultDungeonType;
         this.size = 'Medium';
         this.generatedDungeon = null;
     }
 
     onOpen(): void {
-        const {contentEl} = this;
+        const { contentEl } = this;
+        contentEl.empty();
+        
+        // Use the shared rendering method
+        this.renderContent(contentEl);
+    }
+
+    /**
+     * Render the modal content to a container
+     * This allows the content to be rendered either in this modal
+     * or in the unified generator modal
+     */
+    public renderContent(contentEl: HTMLElement): void {
+        // Clear any existing content
         contentEl.empty();
         
         // Apply modern styling to the modal
@@ -42,15 +56,15 @@ export class DungeonGeneratorModal extends Modal {
             .setName('Dungeon Type')
             .setDesc('Select the type of dungeon to generate')
             .addDropdown(dropdown => {
-                const dungeonTypes = Object.keys(this.plugin.settings.dungeonTypes) as DungeonType[];
+                const dungeonTypes = Object.keys(this.plugin.dungeonSettings.dungeonTypes);
                 
                 dungeonTypes.forEach(type => {
-                    dropdown.addOption(type, this.plugin.settings.dungeonTypes[type].name);
+                    dropdown.addOption(type, this.plugin.dungeonSettings.dungeonTypes[type].name);
                 });
                 
                 dropdown.setValue(this.dungeonType);
                 dropdown.onChange(value => {
-                    this.dungeonType = value as DungeonType;
+                    this.dungeonType = value;
                 });
             });
         
@@ -82,7 +96,7 @@ export class DungeonGeneratorModal extends Modal {
         generateButton.style.fontSize = '1.1em';
         
         generateButton.addEventListener('click', () => {
-            this.generateDungeon();
+            this.generateDungeon(contentEl);
         });
         
         // Preview Container with better styling
@@ -130,25 +144,28 @@ export class DungeonGeneratorModal extends Modal {
         regenerateButton.style.padding = '8px 16px';
         
         regenerateButton.addEventListener('click', () => {
-            this.generateDungeon();
+            this.generateDungeon(contentEl);
         });
     }
 
-    generateDungeon(): void {
+    generateDungeon(contentEl: HTMLElement): void {
         const options = {
             dungeonType: this.dungeonType,
             size: this.size
         };
         
         // Show loading state
-        const previewContainer = document.getElementById('dungeon-preview');
+        const previewContainer = contentEl.querySelector('#dungeon-preview') as HTMLElement;
         if (previewContainer) {
             previewContainer.style.display = 'block';
             previewContainer.innerHTML = '<div style="padding: 30px; text-align: center;">Generating dungeon...</div>';
         }
         
         // Generate the dungeon
-        this.generatedDungeon = this.plugin.generateDungeon(options);
+        this.generatedDungeon = this.plugin.dungeonGenerator.generateDungeon({
+            ...options,
+            dungeonType: this.dungeonType as DungeonType
+        });
         
         // Display preview
         if (previewContainer) {
@@ -158,7 +175,7 @@ export class DungeonGeneratorModal extends Modal {
         
         // Add a title above the SVG
         const dungeonTitle = document.createElement('h3');
-        dungeonTitle.textContent = `${this.plugin.settings.dungeonTypes[this.dungeonType].name} - ${this.size}`;
+        dungeonTitle.textContent = `${this.plugin.dungeonSettings.dungeonTypes[this.dungeonType].name} - ${this.size}`;
         dungeonTitle.style.marginBottom = '10px';
         
         if (previewContainer && previewContainer.firstChild) {
@@ -166,7 +183,7 @@ export class DungeonGeneratorModal extends Modal {
         }
         
         // Show buttons
-        const buttonContainer = document.getElementById('insert-button-container');
+        const buttonContainer = contentEl.querySelector('#insert-button-container') as HTMLElement;
         if (buttonContainer) {
             buttonContainer.style.display = 'block';
         }
@@ -181,7 +198,7 @@ export class DungeonGeneratorModal extends Modal {
             
             // Create the content to insert
             const dungeonContent = `
-## ${this.plugin.settings.dungeonTypes[this.dungeonType].name} Dungeon (${this.size})
+## ${this.plugin.dungeonSettings.dungeonTypes[this.dungeonType].name} Dungeon (${this.size})
 
 ${this.generatedDungeon.svg}
 
@@ -202,7 +219,7 @@ ${this.generatedDungeon.guide}
     }
 
     onClose(): void {
-        const {contentEl} = this;
+        const { contentEl } = this;
         contentEl.empty();
     }
 }
