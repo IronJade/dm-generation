@@ -875,30 +875,87 @@ export class DungeonGeneratorSettingTab extends PluginSettingTab {
         });
         
         confirmButton.addEventListener('click', async () => {
-            // Import the default settings
-            const { DEFAULT_SETTINGS } = await import('./defaults');
-            
-            // Update the dungeon types
-            for (const typeKey in DEFAULT_SETTINGS.dungeonTypes) {
-                this.plugin.dungeonSettings.dungeonTypes[typeKey as DungeonType] = 
-                    JSON.parse(JSON.stringify(DEFAULT_SETTINGS.dungeonTypes[typeKey as DungeonType]));
+            try {
+                let defaultSettings;
+                
+                // Check if we should use custom defaults
+                if (this.plugin.useCustomDefaults && this.plugin.customDefaultsPath) {
+                    try {
+                        // Read the custom defaults file
+                        const adapter = this.app.vault.adapter;
+                        const exists = await adapter.exists(this.plugin.customDefaultsPath);
+                        
+                        if (exists) {
+                            const customDefaultsContent = await adapter.read(this.plugin.customDefaultsPath);
+                            const customDefaults = JSON.parse(customDefaultsContent);
+                            
+                            // Check if it's a unified defaults file
+                            if (customDefaults && customDefaults.dungeon && 
+                                customDefaults.dungeon.dungeonTypes) {
+                                defaultSettings = {
+                                    dungeonTypes: customDefaults.dungeon.dungeonTypes,
+                                    defaultDungeonType: customDefaults.dungeon.defaultDungeonType || 'Cave',
+                                    mapStyle: customDefaults.dungeon.mapStyle || { ...DEFAULT_MAP_STYLE }
+                                };
+                            } 
+                            // Or a dedicated dungeon defaults file
+                            else if (customDefaults && 
+                                customDefaults.dungeonTypes) {
+                                defaultSettings = {
+                                    dungeonTypes: customDefaults.dungeonTypes,
+                                    defaultDungeonType: customDefaults.defaultDungeonType || 'Cave',
+                                    mapStyle: customDefaults.mapStyle || { ...DEFAULT_MAP_STYLE }
+                                };
+                            }
+                            else {
+                                throw new Error("Invalid custom dungeon defaults structure");
+                            }
+                        } else {
+                            throw new Error("Custom defaults file not found");
+                        }
+                    } catch (error) {
+                        console.error('Failed to load custom defaults:', error);
+                        new Notice(`Failed to load custom defaults: ${error.message}. Using built-in defaults.`);
+                        
+                        // Fall back to built-in defaults
+                        const { DEFAULT_SETTINGS } = await import('./defaults');
+                        defaultSettings = DEFAULT_SETTINGS;
+                    }
+                } else {
+                    // Use built-in defaults
+                    const { DEFAULT_SETTINGS } = await import('./defaults');
+                    defaultSettings = DEFAULT_SETTINGS;
+                }
+                
+                // Update the dungeon types
+                for (const typeKey in defaultSettings.dungeonTypes) {
+                    this.plugin.dungeonSettings.dungeonTypes[typeKey as DungeonType] = 
+                        JSON.parse(JSON.stringify(defaultSettings.dungeonTypes[typeKey as DungeonType]));
+                }
+                
+                // Make sure the default map style is set
+                this.plugin.dungeonSettings.mapStyle = { 
+                    ...DEFAULT_MAP_STYLE, 
+                    ...defaultSettings.mapStyle 
+                };
+                
+                // Make sure the default dungeon type is set
+                this.plugin.dungeonSettings.defaultDungeonType = defaultSettings.defaultDungeonType;
+                
+                // Save settings
+                await this.plugin.saveSettings();
+                
+                // Show confirmation
+                new Notice('Default dungeon types and content have been restored!');
+                
+                // Close the confirmation modal and refresh the display
+                confirmModal.close();
+                this.display();
+            } catch (error) {
+                console.error('Error restoring defaults:', error);
+                new Notice(`Error restoring defaults: ${error.message}`);
+                confirmModal.close();
             }
-            
-            // Make sure the default map style is set
-            this.plugin.dungeonSettings.mapStyle = { ...DEFAULT_MAP_STYLE };
-            
-            // Make sure the default dungeon type is set
-            this.plugin.dungeonSettings.defaultDungeonType = DEFAULT_SETTINGS.defaultDungeonType;
-            
-            // Save settings
-            await this.plugin.saveSettings();
-            
-            // Show confirmation
-            new Notice('Default dungeon types and content have been restored!');
-            
-            // Close the confirmation modal and refresh the display
-            confirmModal.close();
-            this.display();
         });
         
         confirmModal.open();

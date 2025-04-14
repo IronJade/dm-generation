@@ -435,23 +435,71 @@ export class RandomGeneratorSettingTab extends PluginSettingTab {
      * Restore default generators
      */
     private async restoreDefaultGenerators(): Promise<void> {
-        // Restore from default settings
-        const defaultGenerators = JSON.parse(JSON.stringify(this.plugin.randomSettings.generators));
-        
-        // For each default generator
-        for (const defaultGenerator of defaultGenerators) {
-            // Check if a generator with this name already exists
-            const existingIndex = this.plugin.randomSettings.generators.findIndex(g => g.name === defaultGenerator.name);
+        try {
+            let defaultGenerators;
             
-            if (existingIndex === -1) {
-                // If no generator with this name exists, add it
-                this.plugin.randomSettings.generators.push(defaultGenerator);
+            // Check if we should use custom defaults
+            if (this.plugin.useCustomDefaults && this.plugin.customDefaultsPath) {
+                try {
+                    // Read the custom defaults file
+                    const adapter = this.app.vault.adapter;
+                    const exists = await adapter.exists(this.plugin.customDefaultsPath);
+                    
+                    if (exists) {
+                        const customDefaultsContent = await adapter.read(this.plugin.customDefaultsPath);
+                        const customDefaults = JSON.parse(customDefaultsContent);
+                        
+                        // Check if it's a unified defaults file
+                        if (customDefaults && customDefaults.random && 
+                            customDefaults.random.generators && Array.isArray(customDefaults.random.generators)) {
+                            defaultGenerators = JSON.parse(JSON.stringify(customDefaults.random.generators));
+                        } 
+                        // Or a dedicated random defaults file
+                        else if (customDefaults && 
+                            customDefaults.generators && Array.isArray(customDefaults.generators)) {
+                            defaultGenerators = JSON.parse(JSON.stringify(customDefaults.generators));
+                        }
+                        else {
+                            throw new Error("Invalid custom random generator defaults structure");
+                        }
+                    } else {
+                        throw new Error("Custom defaults file not found");
+                    }
+                } catch (error) {
+                    console.error('Failed to load custom defaults:', error);
+                    new Notice(`Failed to load custom defaults: ${error.message}. Using built-in defaults.`);
+                    
+                    // Fall back to built-in defaults
+                    const { DEFAULT_SETTINGS } = await import('./constants');
+                    defaultGenerators = JSON.parse(JSON.stringify(DEFAULT_SETTINGS.generators));
+                }
+            } else {
+                // Use built-in defaults from constants.ts
+                const { DEFAULT_SETTINGS } = await import('./constants');
+                defaultGenerators = JSON.parse(JSON.stringify(DEFAULT_SETTINGS.generators));
             }
+            
+            // For each default generator
+            for (const defaultGenerator of defaultGenerators) {
+                // Check if a generator with this name already exists
+                const existingIndex = this.plugin.randomSettings.generators.findIndex(g => g.name === defaultGenerator.name);
+                
+                if (existingIndex === -1) {
+                    // If no generator with this name exists, add it
+                    this.plugin.randomSettings.generators.push(defaultGenerator);
+                } else {
+                    // Replace the existing generator
+                    this.plugin.randomSettings.generators[existingIndex] = defaultGenerator;
+                }
+            }
+            
+            await this.plugin.saveSettings();
+            new Notice('Default generators have been restored');
+            this.display();
+        } catch (error) {
+            console.error('Error restoring default generators:', error);
+            new Notice(`Error restoring default generators: ${error.message}`);
         }
-        
-        await this.plugin.saveSettings();
-        new Notice('Default generators have been restored');
-        this.display();
     }
 
     /**

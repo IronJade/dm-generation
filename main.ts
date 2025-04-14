@@ -31,6 +31,10 @@ export default class UnifiedGeneratorPlugin extends Plugin {
     public dungeonSettings: DungeonGeneratorSettings;
     public randomSettings: RandomGeneratorSettings;
     
+    // Additional unified settings
+    public customDefaultsPath: string = "";
+    public useCustomDefaults: boolean = false;
+    
     // Generator instances
     public npcGenerator: NPCGenerator;
     public dungeonGenerator: DungeonGenerator;
@@ -110,6 +114,10 @@ export default class UnifiedGeneratorPlugin extends Plugin {
         try {
             const data = await this.loadData();
             
+            // Load unified settings
+            this.customDefaultsPath = data?.customDefaultsPath || "";
+            this.useCustomDefaults = data?.useCustomDefaults || false;
+            
             // Load NPC generator settings
             this.npcSettings = Object.assign({}, DEFAULT_NPC_SETTINGS, data?.npcSettings);
             
@@ -128,6 +136,8 @@ export default class UnifiedGeneratorPlugin extends Plugin {
             this.npcSettings = Object.assign({}, DEFAULT_NPC_SETTINGS);
             this.dungeonSettings = Object.assign({}, DEFAULT_DUNGEON_SETTINGS);
             this.randomSettings = Object.assign({}, DEFAULT_RANDOM_SETTINGS);
+            this.customDefaultsPath = "";
+            this.useCustomDefaults = false;
         }
     }
 
@@ -139,7 +149,9 @@ export default class UnifiedGeneratorPlugin extends Plugin {
             await this.saveData({
                 npcSettings: this.npcSettings,
                 dungeonSettings: this.dungeonSettings,
-                randomSettings: this.randomSettings
+                randomSettings: this.randomSettings,
+                customDefaultsPath: this.customDefaultsPath,
+                useCustomDefaults: this.useCustomDefaults
             });
         } catch (error) {
             console.error('Failed to save settings:', error);

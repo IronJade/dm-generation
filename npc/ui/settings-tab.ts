@@ -119,24 +119,75 @@ export class NPCGeneratorSettingTab extends PluginSettingTab {
 
     // Updated restore default data functionality
     private async restoreDefaultData() {
-        // Create a new copy of the default races and classes to avoid reference issues
-        const racesToAdd = JSON.parse(JSON.stringify(defaultRaces));
-        const classesToAdd = JSON.parse(JSON.stringify(defaultClasses));
-
-        // Restore races
-        this.mergeDefaultRaces(racesToAdd);
-
-        // Restore classes
-        this.mergeDefaultClasses(classesToAdd);
-
-        // Show confirmation
-        new Notice('Default races and classes have been restored!');
-
-        // Save the updated settings
-        await this.plugin.saveSettings();
-
-        // Refresh the display to show the changes
-        this.display();
+        try {
+            let racesToAdd;
+            let classesToAdd;
+            
+            // Check if we should use custom defaults
+            if (this.plugin.useCustomDefaults && this.plugin.customDefaultsPath) {
+                try {
+                    // Read the custom defaults file
+                    const adapter = this.app.vault.adapter;
+                    const exists = await adapter.exists(this.plugin.customDefaultsPath);
+                    
+                    if (exists) {
+                        const customDefaultsContent = await adapter.read(this.plugin.customDefaultsPath);
+                        const customDefaults = JSON.parse(customDefaultsContent);
+                        
+                        // Check if it's a unified defaults file
+                        if (customDefaults && customDefaults.npc && 
+                            customDefaults.npc.races && Array.isArray(customDefaults.npc.races) &&
+                            customDefaults.npc.classes && Array.isArray(customDefaults.npc.classes)) {
+                            
+                            racesToAdd = JSON.parse(JSON.stringify(customDefaults.npc.races));
+                            classesToAdd = JSON.parse(JSON.stringify(customDefaults.npc.classes));
+                        } 
+                        // Or a dedicated NPC defaults file
+                        else if (customDefaults && 
+                            customDefaults.races && Array.isArray(customDefaults.races) &&
+                            customDefaults.classes && Array.isArray(customDefaults.classes)) {
+                                
+                            racesToAdd = JSON.parse(JSON.stringify(customDefaults.races));
+                            classesToAdd = JSON.parse(JSON.stringify(customDefaults.classes));
+                        }
+                        else {
+                            throw new Error("Invalid custom defaults structure");
+                        }
+                    } else {
+                        throw new Error("Custom defaults file not found");
+                    }
+                } catch (error) {
+                    console.error('Failed to load custom defaults:', error);
+                    new Notice(`Failed to load custom defaults: ${error.message}. Using built-in defaults.`);
+                    
+                    // Fall back to built-in defaults
+                    racesToAdd = JSON.parse(JSON.stringify(defaultRaces));
+                    classesToAdd = JSON.parse(JSON.stringify(defaultClasses));
+                }
+            } else {
+                // Use built-in defaults
+                racesToAdd = JSON.parse(JSON.stringify(defaultRaces));
+                classesToAdd = JSON.parse(JSON.stringify(defaultClasses));
+            }
+    
+            // Restore races
+            this.mergeDefaultRaces(racesToAdd);
+    
+            // Restore classes
+            this.mergeDefaultClasses(classesToAdd);
+    
+            // Show confirmation
+            new Notice('Default races and classes have been restored!');
+    
+            // Save the updated settings
+            await this.plugin.saveSettings();
+    
+            // Refresh the display to show the changes
+            this.display();
+        } catch (error) {
+            console.error('Error restoring defaults:', error);
+            new Notice(`Error restoring defaults: ${error.message}`);
+        }
     }
 
     private mergeDefaultRaces(defaultRaces: Race[]) {

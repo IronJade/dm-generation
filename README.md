@@ -1,103 +1,114 @@
-# 🎲 Obsidian NPC Generator
+# 🎲 Unified Generator for Obsidian
 
-Generate rich, detailed NPCs for your Tabletop RPG campaigns directly within Obsidian!
+A powerful, all-in-one tabletop RPG content generation plugin for Obsidian, featuring NPC, Dungeon, and Random Content Generators.
 
 ![NPC Generator Demo](demo.gif)
 
-## ✨ Features
+## 🌟 Features
 
-### 🧙 Comprehensive NPC Generation
+### 🧙‍♀️ NPC Generator
 - Generate fully-detailed NPCs with a single click
-- Customize every aspect of your character
+- Comprehensive character creation options
 - Support for multiple races and classes
-- Intelligent randomization
+- Customizable character details
+- D&D 5e compatible
+- Multiple statblock formats
 
-### 🎭 Detailed Character Creation
-- Random or guided NPC generation
-- Comprehensive statblock generation
-- Supports D&D 5e ruleset
-- Customizable races and classes
+### 🏰 Dungeon Generator
+- Create randomized dungeon maps
+- Multiple dungeon types (Cave, Tomb, Deep Tunnels, Ruins)
+- Customizable map styles
+- Detailed room generation
+- Automatic DM guide creation
+- SVG map export
 
-## 🚀 Installation
+### 🎲 Random Content Generator
+- Create custom random content generators
+- Flexible template-based generation
+- Supports multiple fields and formats
+- Easy import/export of generators
+
+## 📦 Installation
 
 ### Method 1: Obsidian Plugin Browser
 1. Open Obsidian
 2. Go to Settings → Community Plugins
 3. Click "Browse"
-4. Search for "NPC Generator"
+4. Search for "Unified Generator"
 5. Click "Install"
 
 ### Method 2: Manual Installation
-1. Download the latest release
-2. Create folder: `<vault>/.obsidian/plugins/npc-generator/`
+1. Download the latest release from GitHub
+2. Create folder: `<vault>/.obsidian/plugins/unified-generator/`
 3. Place the files in this folder
 4. Enable the plugin in Obsidian settings
 
-## 🎮 Usage
+## 🚀 Usage
 
-### Generating an NPC
-1. Open the NPC Generator via:
+### NPC Generator
+1. Open via:
    - Ribbon Icon (d20 dice)
    - Command Palette (Ctrl/Cmd + P, then "Generate NPC")
+2. Customize:
+   - Level
+   - Race
+   - Class
+   - Subclass
+   - Alignment
+3. Generate and insert into current note
 
-### NPC Generation Modal
-The generation modal provides comprehensive customization:
+### Dungeon Generator
+1. Open via:
+   - Ribbon Icon (map icon)
+   - Command Palette (Ctrl/Cmd + P, then "Generate Dungeon")
+2. Customize:
+   - Dungeon Type
+   - Size
+3. Generate map and guide, insert into current note
 
-#### Basic Details
-- **Level**: Choose NPC's experience level (1-20)
-- **Race**: Select from predefined or custom races
-- **Class**: Choose from multiple character classes
-- **Alignment**: Pick moral and ethical orientation
-
-#### Advanced Customization
-- Detailed ability score generation
-- Skill proficiency selection
-- Trait and equipment management
-
-### Custom Parameters
-Add your own custom parameters to enrich NPC generation:
-- Define unique attributes
-- Create specialized tracking fields
-- Extend NPC complexity
-
-## 📊 Statblock Formats
-
-### Fantasy Statblock
-- Fully compatible with Fantasy Statblock plugin
-- Includes:
-  - Ability Scores
-  - Skills
-  - Traits
-  - Actions
-  - Possessions
-  - Spellcasting (for magic users)
-
-### Basic Text Format
-- Simple, readable format
-- Quick reference for GMs
+### Random Generator
+1. Open via:
+   - Ribbon Icon (random icon)
+   - Command Palette (Ctrl/Cmd + P, then "Generate Random Content")
+2. Select or create a generator
+3. Generate random content
 
 ## 🛠 Configuration
 
-### Plugin Settings
-Customize your NPC generation:
-- Manage Races
-- Define Character Classes
-- Create Custom Parameters
-- Choose Statblock Style
+### NPC Generator Settings
+- Manage races
+- Define character classes
+- Create custom parameters
+- Choose statblock style
 
-## 🎲 Randomization Details
+### Dungeon Generator Settings
+- Customize dungeon types
+- Configure map styles
+- Manage room and monster types
 
-### Ability Score Generation
-- Uses 4d6 drop lowest method
-- Reflects D&D 5e character creation rules
+### Random Generator Settings
+- Create custom generators
+- Import/Export generators
+- Apply custom CSS
 
-### Name Generation
-- Race-specific name pools
-- Diverse naming conventions
+## 📊 Generation Methods
 
-### Equipment
-- Class-based starting equipment
-- Occasional special item generation
+### NPC Generation
+- 4d6 drop lowest method for ability scores
+- Race-specific name generation
+- Intelligent subclass selection
+- Comprehensive skill and trait assignment
+
+### Dungeon Generation
+- Procedural room placement
+- Corridor and connection generation
+- Content type distribution
+- Detailed room descriptions
+
+### Random Content Generation
+- Template-based generation
+- Multiple field support
+- Flexible random selection
 
 ## 🤝 Contributing
 
