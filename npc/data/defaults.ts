@@ -357,7 +357,7 @@ export const defaultClasses: CharacterClass[] = [
                         { level: 1, name: "Druidic", description: "You know Druidic, the secret language of druids." },
                         { level: 1, name: "Spellcasting", description: "Drawing on the divine essence of nature itself, you can cast spells to shape that essence to your will." },
                         { level: 2, name: "Wild Shape", description: "You can use your action to magically assume the shape of a beast that you have seen before." },
-                        { level: 2, name: "Druid Circle", description: "You choose to identify with a circle of druids: the Circle of the Land or the Circle of the Moon." }
+                        { level: 2, name: "Druid Circle", description: "You choose to identify with a circle of druids such as the Circle of the Land or the Circle of the Moon." }
                     ]
                 },
                 { 
